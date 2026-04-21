@@ -1,50 +1,50 @@
 # 🏥 Healthy@Work Analytics Dashboard
 
-**Interaktives Shiny Dashboard für Arbeitsgesundheitsanalysen**
+**Interactive Shiny Dashboard for Occupational Health Analyses**
 
 [![DEMO VERSION](https://img.shields.io/badge/STATUS-DEMO%20VERSION-red?style=for-the-badge)](https://aaronfriedli.shinyapps.io/healthyworksimulated/)
 ---
 
-## ⚠️ WICHTIGER HINWEIS
+## ⚠️ IMPORTANT NOTICE
 
-**Diese Version nutzt AUSSCHLIESSLICH simulierte, fiktive Daten!**
+**This version uses EXCLUSIVELY simulated, fictional data!**
 
-- ❌ Alle gezeigten Zahlen, Ergebnisse und Analysen sind **NICHT real**
-- ❌ Die Daten wurden zufällig generiert und repräsentieren **keine echte Studie**
-- ❌ **Keine Rückschlüsse** auf reale Banken, Organisationen oder Personen möglich
-- ✅ Diese Version dient **ausschließlich der Demonstration** der Dashboard-Funktionalität
-
----
-
-## 📊 Über das Projekt
-
-Dieses Dashboard wurde im Rahmen der **Healthy@Work Studie** entwickelt und ermöglicht interaktive Analysen von Arbeitsgesundheitsdaten in Schweizer Banken.
-
-### Analysierte Dimensionen:
-- 🧠 **Arbeitsbedingungen**: Autonomie, Ressourcen, Stressoren
-- 💪 **Coping-Strategien**: Selbstsorge, Interessierte Selbstgefährdung
-- 😊 **Wohlbefinden**: Engagement, Work-Life-Balance, Erschöpfung
-
-### Dashboard-Features:
-- **7 interaktive Tabs** mit verschiedenen Analysetypen
-- **Multilevel-Modelle** (MLM) zur Berücksichtigung der Organisations-Hierarchie
-- **Prädiktor-Rechner** mit Waterfall- und Sensitivity-Analysen
-- **EMM-Analysen** für faire Vergleiche zwischen Organisationseinheiten
-- **Korrelationsanalysen** und deskriptive Statistiken
-- **Report-Export** (Word, PDF, HTML)
+- ❌ All displayed numbers, results, and analyses are **NOT real**
+- ❌ The data was randomly generated and does **not represent a real study**
+- ❌ **No conclusions** can be drawn about real banks, organisations, or individuals
+- ✅ This version serves **exclusively as a demonstration** of the dashboard's functionality
 
 ---
 
-## 🚀 Installation & Start
+## 📊 About the Project
 
-### Voraussetzungen
+This dashboard was developed as part of the **Healthy@Work Study** and enables interactive analyses of occupational health data in Swiss banks.
+
+### Analysed Dimensions:
+- 🧠 **Working Conditions**: Autonomy, Resources, Stressors
+- 💪 **Coping Strategies**: Self-care, Risky self-endangerment
+- 😊 **Well-being**: Engagement, Work-Life Balance, Exhaustion
+
+### Dashboard Features:
+- **7 interactive tabs** with various analysis types
+- **Multilevel Models** (MLM) accounting for organisational hierarchy
+- **Predictor Calculator** with waterfall and sensitivity analyses
+- **EMM Analyses** for fair comparisons between organisational units
+- **Correlation analyses** and descriptive statistics
+- **Report Export** (Word, PDF, HTML)
+
+---
+
+## 🚀 Installation & Getting Started
+
+### Prerequisites
 
 ```r
 # R Version >= 4.0.0
 R.version.string
 ```
 
-### Benötigte Pakete
+### Required Packages
 
 ```r
 install.packages(c(
@@ -56,153 +56,153 @@ install.packages(c(
 ))
 ```
 
-### Dashboard starten
+### Starting the Dashboard
 
 ```r
-# Navigiere zum Projektordner
+# Navigate to the project folder
 setwd("path/to/healthy_at_work_dashboard")
 
-# Starte die App
+# Start the app
 shiny::runApp()
 ```
 
-Das Dashboard öffnet sich im Browser unter `http://127.0.0.1:XXXX`
+The dashboard will open in your browser at `http://127.0.0.1:XXXX`
 
 ---
 
-## 📁 Projektstruktur
+## 📁 Project Structure
 
 ```
 healthy_at_work_dashboard/
 │
-├── app.R                    # Haupt-App (UI + Server)
-├── helpers.R                # Analyse-Funktionen
-├── data_processing.R        # Datenverarbeitung & Simulation
-├── report_template.Rmd      # R Markdown Template für Reports
+├── app.R                    # Main app (UI + Server)
+├── helpers.R                # Analysis functions
+├── data_processing.R        # Data processing & simulation
+├── report_template.Rmd      # R Markdown template for reports
 │
 ├── www/
-│   └── fhnw.jpg            # FHNW Logo
+│   └── fhnw.jpg            # FHNW logo
 │
-└── README.md               # Diese Datei
+└── README.md               # This file
 ```
 
 ---
 
-## 📖 Dashboard-Tabs im Detail
+## 📖 Dashboard Tabs in Detail
 
-### 1️⃣ Überblick
-- Stichprobenübersicht (N, Banken, Durchschnitt pro Bank)
-- Datensatz-Information
-- **Variablen-Übersicht** mit allen verwendeten Konstrukten
+### 1️⃣ Overview
+- Sample overview (N, banks, average per bank)
+- Dataset information
+- **Variable overview** with all constructs used
 
-### 2️⃣ Deskriptive Statistiken
-- Häufigkeitstabellen für kategoriale Variablen
-- Boxplots nach Gruppen (Alter, Geschlecht, etc.)
-- **Filter aktiv**: Alter, Geschlecht, Bank
+### 2️⃣ Descriptive Statistics
+- Frequency tables for categorical variables
+- Boxplots by group (age, gender, etc.)
+- **Active filters**: Age, Gender, Bank
 
 ### 3️⃣ Clustering & ICC
 - **Intraclass Correlation Coefficients** (ICC)
-- Analyse der Varianz zwischen vs. innerhalb Organisationen
-- Signifikanztests
+- Analysis of variance between vs. within organisations
+- Significance tests
 
-### 4️⃣ Inferenzstatistik
-- **Multilevel-Modelle** (Mixed Effects Models)
-- Kontrolliert für Organisationszugehörigkeit
-- Koeffiziententabellen + Visualisierungen
-- **Nur Männer & Frauen** (automatischer Gender-Filter)
+### 4️⃣ Inferential Statistics
+- **Multilevel Models** (Mixed Effects Models)
+- Controls for organisational membership
+- Coefficient tables + visualisations
+- **Men & women only** (automatic gender filter)
 
-### 5️⃣ Prädiktor-Rechner
-- Interaktive Vorhersagen basierend auf persönlichen Merkmalen
-- **Waterfall-Chart**: Wie kommt der Wert zustande?
-- **Sensitivity-Analyse**: Was-wäre-wenn Szenarien
+### 5️⃣ Predictor Calculator
+- Interactive predictions based on personal characteristics
+- **Waterfall Chart**: How is the value composed?
+- **Sensitivity Analysis**: What-if scenarios
 
-### 6️⃣ Organisationseinheiten
+### 6️⃣ Organisational Units
 - **Estimated Marginal Means** (EMMs)
-- Bereinigte Vergleiche zwischen Units
-- Paarweise Kontraste
+- Adjusted comparisons between units
+- Pairwise contrasts
 
-### 7️⃣ Zusammenhänge
-- Korrelationsmatrix
-- Interaktive Scatter Plots
-- Detaillierte Korrelationstabellen
+### 7️⃣ Correlations
+- Correlation matrix
+- Interactive scatter plots
+- Detailed correlation tables
 
-### 8️⃣ Report Exportieren
-- **Auswählbare Abschnitte**
-- **Formate**: Word (.docx), PDF, HTML
-- Filter-Einstellungen konfigurierbar
+### 8️⃣ Export Report
+- **Selectable sections**
+- **Formats**: Word (.docx), PDF, HTML
+- Configurable filter settings
 
 ---
 
 ## 🎨 Design
 
-Das Dashboard folgt dem **FHNW Corporate Design**:
-- Primärfarbe: **FHNW Gelb** (#FDE70E)
-- Akzentfarbe: Schwarz (#000000)
-- Minimalistisches, professionelles Design
-- Responsive Layout
+The dashboard follows the **FHNW Corporate Design**:
+- Primary colour: **FHNW Yellow** (#FDE70E)
+- Accent colour: Black (#000000)
+- Minimalist, professional design
+- Responsive layout
 
 ---
 
-## 📊 Simulierte Daten
+## 📊 Simulated Data
 
-Die Daten werden in `data_processing.R` > `load_simulated_data()` generiert:
+Data is generated in `data_processing.R` > `load_simulated_data()`:
 
-- **N = 1500** simulierte Beobachtungen
-- **3 Wellen** (2022/2023, 2023/2024, 2024/2025)
-- **15 Organisationen** (Banken)
-- **Realistische Verteilungen** für alle Variablen
-- **Korrelationsstruktur** angelehnt an echte Studien
+- **N = 1500** simulated observations
+- **3 waves** (2022/2023, 2023/2024, 2024/2025)
+- **15 organisations** (banks)
+- **Realistic distributions** for all variables
+- **Correlation structure** modelled on real studies
 
 ---
 
-## 🔬 Statistische Methoden
+## 🔬 Statistical Methods
 
-### Multilevel-Modelle (MLM)
+### Multilevel Models (MLM)
 ```r
 nlme::lme(
-  fixed = outcome ~ prädiktoren,
+  fixed = outcome ~ predictors,
   random = ~ 1 | organisation,
   data = df
 )
 ```
 
-**Warum MLM?**
-- Berücksichtigt Abhängigkeiten innerhalb Organisationen
-- Trennt Varianz zwischen vs. innerhalb Banken
-- Robuste Standardfehler
+**Why MLM?**
+- Accounts for dependencies within organisations
+- Separates variance between vs. within banks
+- Robust standard errors
 
 ### Estimated Marginal Means (EMMs)
 ```r
-emmeans::emmeans(model, ~ organisationseinheit)
+emmeans::emmeans(model, ~ organisational_unit)
 ```
 
-**Warum EMMs?**
-- Fairer Vergleich zwischen Units
-- Kontrolliert für Störvariablen (Alter, Geschlecht, etc.)
-- "Gleiche Bedingungen" für alle Units
+**Why EMMs?**
+- Fair comparison between units
+- Controls for confounding variables (age, gender, etc.)
+- "Equal conditions" for all units
 
 ---
 
-## 👥 Entwickelt von
+## 👥 Developed by
 
-**FHNW - Fachhochschule Nordwestschweiz**  
-Institut für Kooperationsforschung und -entwicklung
+**FHNW - University of Applied Sciences and Arts Northwestern Switzerland**  
+Institute for Cooperation Research and Development
 
-**Projekt**: Healthy@Work Studie  
-**Kontakt**: [FHNW Website](https://www.fhnw.ch)
-
----
-
-## 📄 Lizenz
-
-Dieses Projekt ist für **Demonstrations- und Lehrzwecke** erstellt.  
-Für die Nutzung mit echten Daten kontaktieren Sie bitte die FHNW.
+**Project**: Healthy@Work Study  
+**Contact**: [FHNW Website](https://www.fhnw.ch)
 
 ---
 
-## 🙏 Danksagung
+## 📄 Licence
 
-Entwickelt mit:
+This project was created for **demonstration and educational purposes**.  
+For use with real data, please contact FHNW.
+
+---
+
+## 🙏 Acknowledgements
+
+Built with:
 - [R Shiny](https://shiny.rstudio.com/)
 - [shinydashboard](https://rstudio.github.io/shinydashboard/)
 - [tidyverse](https://www.tidyverse.org/)
@@ -210,9 +210,9 @@ Entwickelt mit:
 
 ---
 
-**Für Fragen oder Feedback:**  
-📧 Kontaktieren Sie die FHNW Projektleitung
+**For questions or feedback:**  
+📧 Contact the FHNW project team
 
 ---
 
-*Letzte Aktualisierung: März 2026*
+*Last updated: March 2026*
