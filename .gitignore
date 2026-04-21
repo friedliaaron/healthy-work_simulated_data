@@ -1,0 +1,18 @@
+# Real data files
+../02_data/
+
+# Credentials database
+database/
+*.sqlite
+
+# Environment secrets
+.Renviron
+
+# renv cache
+renv/library/
+renv/staging/
+
+# R session files
+.Rhistory
+.RData
+.Rproj.user/

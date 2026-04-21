@@ -1,0 +1,424 @@
+---
+title: "Healthy@Work Analysebericht"
+subtitle: "`r params$dataset_name`"
+date: "`r format(Sys.Date(), '%d.%m.%Y')`"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float:
+      collapsed: false
+    toc_depth: 2
+    self_contained: true
+params:
+  data: NULL
+  dataset_name: "Welle 2024/2025"
+  filter_info: "Keine Filter angewendet"
+  sections: !r c("overview", "descriptives", "clustering", "inference", "org_units", "correlations", "benchmark")
+  benchmark_bank: ""
+  total_n: 0
+  total_banks: 0
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width  = 11,
+  fig.height = 6
+)
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(nlme)
+library(lme4)
+library(lmerTest)
+library(performance)
+library(emmeans)
+library(corrplot)
+library(Hmisc)
+library(plotly)
+
+source("helpers.R")
+
+df <- params$data
+
+outcomes <- c(
+  "cond_auton_m", "cond_res_m", "cond_dem_m",
+  "cope_seso_m",  "cope_isg_m",
+  "wbpos_engage_m", "wbneg_ldb_m", "wbneg_fws_m"
+)
+outcome_labels <- c(
+  "cond_auton_m"   = "Autonomie",
+  "cond_res_m"     = "Ressourcen",
+  "cond_dem_m"     = "Stressoren",
+  "cope_seso_m"    = "Selbstsorge",
+  "cope_isg_m"     = "Interessierte Selbstgefährdung",
+  "wbpos_engage_m" = "Pos. WB: Engagement",
+  "wbneg_ldb_m"    = "Neg. WB: Life-Domain-Balance",
+  "wbneg_fws_m"    = "Neg. WB: Erschöpfung"
+)
+```
+
+<style>
+  :root {
+    --fhnw-yellow: #FDE70E;
+    --fhnw-black:  #000000;
+    --fhnw-grey:   #767573;
+    --fhnw-light:  #F1F1EE;
+  }
+  body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  h1, h2, h3 { color: var(--fhnw-black); }
+  h2 { border-bottom: 3px solid var(--fhnw-yellow); padding-bottom: 6px; margin-top: 30px; }
+  .meta-box {
+    background: var(--fhnw-light);
+    border-left: 5px solid var(--fhnw-yellow);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 3px;
+  }
+  .info-box {
+    background: #fff8d6;
+    border: 1px solid var(--fhnw-yellow);
+    padding: 12px 16px;
+    border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    display: inline-block;
+    background: white;
+    border: 2px solid var(--fhnw-grey);
+    border-top: 4px solid var(--fhnw-yellow);
+    border-radius: 3px;
+    padding: 14px 24px;
+    margin: 6px 10px 6px 0;
+    text-align: center;
+    min-width: 140px;
+  }
+  .stat-card .val { font-size: 2em; font-weight: bold; color: var(--fhnw-black); }
+  .stat-card .lbl { font-size: 0.85em; color: var(--fhnw-grey); }
+  .section-divider { border: none; border-top: 2px solid var(--fhnw-light); margin: 30px 0; }
+</style>
+
+---
+
+<div class="meta-box">
+**Datensatz:** `r params$dataset_name` &nbsp;&nbsp;|&nbsp;&nbsp;
+**Generiert:** `r format(Sys.time(), '%d.%m.%Y %H:%M')` &nbsp;&nbsp;|&nbsp;&nbsp;
+**Filter:** `r params$filter_info`
+</div>
+
+---
+
+```{r has_section, include=FALSE}
+has <- function(s) s %in% params$sections
+```
+
+---
+
+# Überblick {#overview}
+
+```{r overview, eval=has("overview")}
+n_total <- nrow(df)
+n_banks <- length(unique(df$orga))
+avg_per <- round(n_total / n_banks, 1)
+```
+
+```{r overview-cards, eval=has("overview"), results='asis'}
+cat(paste0(
+  '<div class="stat-card"><div class="val">', n_total, '</div><div class="lbl">Teilnehmende</div></div>',
+  '<div class="stat-card"><div class="val">', n_banks, '</div><div class="lbl">Banken</div></div>',
+  '<div class="stat-card"><div class="val">', avg_per, '</div><div class="lbl">Ø pro Bank</div></div>'
+))
+```
+
+<br>
+
+```{r overview-notes, eval=has("overview"), results='asis'}
+cat('<div class="info-box">
+<strong>Wichtige Hinweise zum Datensatz:</strong>
+<ul>
+  <li>Nur Organisationen mit mindestens n = 10 Personen sind inkludiert</li>
+  <li>Personen mit nicht-validen Bankenzugehörigkeiten wurden ausgeschlossen</li>
+  <li>Personen mit "vereinfachter Zeiterfassung" wurden gefiltert</li>
+  <li><strong>Gender-Filterung:</strong> Deskriptive Statistiken zeigen alle Geschlechter. Inferenzstatistik (MLM) nutzt nur Männer und Frauen.</li>
+</ul>
+</div>')
+```
+
+### Relevante Variablen
+
+```{r overview-vars, eval=has("overview")}
+tribble(
+  ~`Variablen-Art`,                         ~Variablenname,       ~Bedeutung,
+  "Soziodemographie",                        "age",                "Altersgruppe",
+  "Soziodemographie",                        "gender",             "Geschlecht",
+  "Anstellungskontext",                      "fk",                 "Führungskraft",
+  "Anstellungskontext",                      "doku",               "Selbstständige Zeitdokumentation",
+  "Anstellungskontext",                      "talk",               "Regelmässige MA-Gespräche",
+  "Anstellungskontext",                      "time_tracking",      "Offizielle Zeiterfassung",
+  "Anstellungskontext",                      "fulltime",           "Vollzeitbeschäftigung (90-100%)",
+  "Anstellungskontext",                      "homeoffice",         "Homeoffice-Anteil (%)",
+  "Anstellungskontext",                      "consult",            "Anlaufstelle vorhanden",
+  "Studie",                                  "waveNumber",         "Erhebungswelle",
+  "Skala: Arbeitsbedingung",                 "cond_auton_m",       "Wahrgenommene Autonomie",
+  "Skala: Arbeitsbedingung",                 "cond_res_m",         "Wahrgenommene Ressourcen",
+  "Skala: Arbeitsbedingung",                 "cond_dem_m",         "Wahrgenommene Stressoren",
+  "Skala: Coping",                           "cope_seso_m",        "Selbstsorge",
+  "Skala: Coping",                           "cope_isg_m",         "Interessierte Selbstgefährdung",
+  "Skala: Wohlbefinden (positiv)",           "wbpos_engage_m",     "Engagement",
+  "Skala: Wohlbefinden (negativ)",           "wbneg_ldb_m",        "Fehlende Life-Domain-Balance",
+  "Skala: Wohlbefinden (negativ)",           "wbneg_fws_m",        "Erschöpfung"
+) %>%
+  DT::datatable(
+    options = list(pageLength = 18, dom = 't', ordering = FALSE),
+    rownames = FALSE
+  )
+```
+
+---
+
+# Deskriptive Statistiken {#descriptives}
+
+```{r desc-intro, eval=has("descriptives"), results='asis'}
+cat("Häufigkeiten der Dashboard-Variablen und Verteilung der psychologischen Skalen.\n\n")
+```
+
+## Häufigkeitstabellen
+
+```{r desc-tables, eval=has("descriptives"), results='asis'}
+desc_vars <- c(
+  "age"               = "Alter",
+  "gender"            = "Geschlecht",
+  "fk"                = "Führungskraft",
+  "doku"              = "Selbstständige Dokumentation",
+  "talk"              = "MA-Gespräche",
+  "fulltime"          = "Vollzeitarbeit",
+  "time_tracking_type"= "Zeiterfassung",
+  "consult"           = "Anlaufstelle"
+)
+
+for (var in names(desc_vars)) {
+  if (var %in% names(df)) {
+    cat(paste0("\n### ", desc_vars[var], "\n\n"))
+    print(htmltools::tagList(create_frequency_table(df, var)))
+    cat("\n<br>\n\n")
+  }
+}
+```
+
+## Boxplots nach Gruppenmerkmalen
+
+```{r desc-boxplots, eval=has("descriptives"), fig.height=7, results='asis'}
+box_vars <- c("age", "gender", "fk", "talk", "fulltime", "time_tracking_type", "consult")
+
+for (var in box_vars) {
+  if (var %in% names(df)) {
+    cat(paste0("\n### ", desc_vars[var], "\n\n"))
+    print(plot_scale_boxplots(df, var))
+    cat("\n<hr class='section-divider'>\n\n")
+  }
+}
+```
+
+---
+
+# Clustering & ICC {#clustering}
+
+```{r icc-intro, eval=has("clustering"), results='asis'}
+cat('<div class="info-box">
+<strong>Kernfrage: Spielt es eine Rolle, bei welcher Bank man arbeitet?</strong>
+<ul>
+  <li><strong>ICC ≥ 0.05:</strong> Spürbarer "Banken-Effekt" — Banken unterscheiden sich merklich voneinander</li>
+  <li><strong>p-Wert &lt; 0.05:</strong> Der Banken-Effekt ist statistisch signifikant</li>
+  <li>Hintergrund: Ein ICC von z.B. 0.10 bedeutet, dass 10% der Gesamtvarianz auf Unterschiede zwischen Banken zurückgehen.</li>
+</ul>
+</div>')
+```
+
+```{r icc-table, eval=has("clustering")}
+if (!is.null(df)) calculate_icc_table(df)
+```
+
+---
+
+# Inferenzstatistik {#inference}
+
+```{r inf-intro, eval=has("inference"), results='asis'}
+cat('<div class="info-box">
+<strong>Multilevel-Modelle (MLM): Einfluss von Dashboard-Variablen auf Gesundheit</strong>
+<ul>
+  <li>Jedes Modell nutzt den <strong>vollständigen Datensatz</strong> (nur Männer &amp; Frauen), unabhängig von Sidebar-Filtern</li>
+  <li>Prädiktoren: Führungskraft, MA-Gespräche, Alter (std.), Geschlecht (weiblich), Vollzeit, Homeoffice (std.), Anlaufstelle, Zeiterfassung</li>
+  <li>Signifikante Effekte (p &lt; 0.05) sind farblich hervorgehoben</li>
+  <li>Alle Skalenmodelle nutzen Organisationszugehörigkeit als Random-Effekt (1 | orga)</li>
+</ul>
+</div>')
+```
+
+```{r inf-models, eval=has("inference"), results='asis', fig.height=5}
+df_mlm <- df %>% filter(gender %in% c(1, 2))
+
+for (outcome in outcomes) {
+  label <- outcome_labels[outcome]
+  cat(paste0("\n## ", label, "\n\n"))
+
+  model <- tryCatch(
+    run_mlm(df_mlm, outcome, include_time_tracking = TRUE, include_wave = FALSE),
+    error = function(e) NULL
+  )
+
+  if (is.null(model)) {
+    cat("*Modell konnte nicht berechnet werden.*\n\n")
+    next
+  }
+
+  cat("\n### Modell-Ergebnisse\n\n")
+  print(htmltools::tagList(create_mlm_table(model, label)))
+  cat("\n\n")
+
+  cat("\n### Koeffizienten-Plot\n\n")
+  print(plot_coefficients(model))
+  cat("\n<hr class='section-divider'>\n\n")
+}
+```
+
+---
+
+# Organisationseinheiten {#org_units}
+
+```{r org-intro, eval=has("org_units"), results='asis'}
+cat('<div class="info-box">
+<strong>Estimated Marginal Means (EMMs) nach Organisationseinheit</strong>
+<p>EMMs zeigen bereinigte Durchschnittswerte pro Organisationseinheit. Systematische Unterschiede in
+Geschlechterverteilung, Altersstruktur, Führungskräfte-Anteil, Homeoffice-Nutzung etc. werden
+herausgerechnet — so sehen wir den "reinen" Unit-Effekt.</p>
+<p>Modell-Prädiktoren: fk, talk, time_tracking, Alter (std.), Geschlecht (weiblich), Vollzeit, Homeoffice (std.), Anlaufstelle + (1 | bank_name)</p>
+</div>')
+```
+
+```{r org-models, eval=has("org_units"), results='asis', fig.height=5}
+for (outcome in outcomes) {
+  label <- outcome_labels[outcome]
+  cat(paste0("\n## ", label, "\n\n"))
+
+  org_model <- tryCatch(
+    run_org_unit_model(df, outcome),
+    error = function(e) NULL
+  )
+
+  if (is.null(org_model)) {
+    cat("*Modell konnte nicht berechnet werden (zu wenige Organisationseinheiten?).*\n\n")
+    next
+  }
+
+  cat("\n### Estimated Marginal Means\n\n")
+  print(plot_org_emmeans(org_model, label))
+  cat("\n\n")
+
+  cat("\n### Kontrast-Tabelle\n\n")
+  print(htmltools::tagList(create_org_contrast_table(org_model)))
+  cat("\n<hr class='section-divider'>\n\n")
+}
+```
+
+---
+
+# Zusammenhänge {#correlations}
+
+```{r corr-intro, eval=has("correlations"), results='asis'}
+cat("Spearman-Korrelationen zwischen den psychologischen Skalen sowie explorative Scatter-Plots.\n\n")
+```
+
+## Korrelationsmatrix
+
+```{r corr-plot, eval=has("correlations"), fig.height=7, fig.width=9}
+if (!is.null(df)) create_correlation_plot(df)
+```
+
+## Korrelationstabelle (Pearson)
+
+```{r corr-table, eval=has("correlations")}
+if (!is.null(df)) create_correlation_table(df)
+```
+
+## Scatter-Plot: Homeoffice & Wohlbefinden
+
+```{r corr-scatter, eval=has("correlations"), fig.height=4}
+if (!is.null(df)) {
+  p1 <- create_scatter_plot(df, "wbneg_fws_m")
+  p2 <- create_scatter_plot(df, "wbpos_engage_m")
+  plotly::subplot(p1, p2, nrows = 1, titleX = TRUE, titleY = TRUE,
+                  margin = 0.06) %>%
+    plotly::layout(title = "Homeoffice vs. Erschöpfung (links) & Engagement (rechts)")
+}
+```
+
+---
+
+# Banken-Benchmark {#benchmark}
+
+```{r bench-intro, eval=has("benchmark"), results='asis'}
+cat('<div class="info-box">
+<strong>Methodik:</strong> Die Analyse vergleicht den Mittelwert der ausgewählten Bank mit dem
+Mittelwert aller anderen Banken — separat für jede der 8 Skalen (One-sample t-Test pro Skala).
+<ul>
+  <li><strong>Grün:</strong> Bank liegt über dem Durchschnitt</li>
+  <li><strong>Rot:</strong> Bank liegt unter dem Durchschnitt</li>
+  <li><strong>*</strong> Differenz ist statistisch signifikant (p &lt; 0.05)</li>
+</ul>
+<p style="color: grey; font-size: 12px;">p-Werte sind nicht für multiples Testen korrigiert und haben explorativen Charakter.</p>
+</div>')
+```
+
+```{r bench-check, eval=has("benchmark"), results='asis'}
+focal_bank <- params$benchmark_bank
+if (is.null(focal_bank) || focal_bank == "" || !focal_bank %in% df$bank_name) {
+  cat(paste0(
+    '<div style="background:#fff3cd;border:1px solid #ffc107;padding:12px;border-radius:4px;">',
+    '<strong>⚠ Kein Benchmark:</strong> Keine Bank ausgewählt oder Bank nicht im Datensatz. ',
+    'Bitte <code>benchmark_bank</code> beim Export angeben.</div>'
+  ))
+  focal_bank <- NULL
+}
+```
+
+```{r bench-results, eval=has("benchmark") && !is.null(params$benchmark_bank) && params$benchmark_bank != "", fig.height=5}
+if (!is.null(focal_bank) && focal_bank != "") {
+  bench_res <- run_benchmark_analysis(df, focal_bank)
+
+  print(plot_benchmark_diverging(bench_res, focal_bank))
+}
+```
+
+```{r bench-radar, eval=has("benchmark") && !is.null(params$benchmark_bank) && params$benchmark_bank != "", fig.height=5}
+if (!is.null(focal_bank) && focal_bank != "") {
+  print(plot_benchmark_radar(bench_res))
+}
+```
+
+```{r bench-table, eval=has("benchmark") && !is.null(params$benchmark_bank) && params$benchmark_bank != ""}
+if (!is.null(focal_bank) && focal_bank != "") {
+  bench_res %>%
+    mutate(across(where(is.numeric), round, 3)) %>%
+    DT::datatable(
+      caption = paste0("Benchmark: ", focal_bank, " vs. alle anderen Banken"),
+      options = list(pageLength = 10, dom = 't', ordering = FALSE),
+      rownames = FALSE
+    ) %>%
+    DT::formatStyle(
+      "p_value",
+      color      = DT::styleInterval(0.05, c("#b81414", "black")),
+      fontWeight = DT::styleInterval(0.05, c("bold", "normal"))
+    )
+}
+```
+
+---
+
+<p style="color: var(--fhnw-grey); font-size: 12px; text-align: center; margin-top: 40px;">
+Healthy@Work Analytics &nbsp;|&nbsp; FHNW &nbsp;|&nbsp; Generiert am `r format(Sys.time(), '%d.%m.%Y %H:%M')`
+</p>
